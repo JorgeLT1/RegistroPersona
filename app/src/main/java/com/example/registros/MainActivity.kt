@@ -40,8 +40,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import com.example.registros.domain.ClienteDb
 import com.example.registros.data.local.entities.Cliente
+import com.example.registros.domain.ClienteDb
 import com.example.registros.ui.theme.RegistrosTheme
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -77,6 +78,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun PantallaCliente(viewModel: ClienteViewModel = hiltViewModel()) {
     val clientes by viewModel.clientes.collectAsStateWithLifecycle()
+    val isNombreValid = viewModel.Nombre.isNotEmpty()
+    val isApellidoValid = viewModel.Apellido.isNotEmpty()
+    val isEdadValid = viewModel.Edad.isNotEmpty()
+    val isNumeroValid = viewModel.Numero.isNotEmpty()
+    var isSaveButtonClicked by remember { mutableStateOf(false) }
+    var isNombreEmpty by remember { mutableStateOf(false) }
+
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
         viewModel.isMessageShownFlow.collectLatest {
@@ -96,11 +104,18 @@ fun PantallaCliente(viewModel: ClienteViewModel = hiltViewModel()) {
             TopAppBar(
                 title = { Text(text = "Personas") },
                 actions = {
-                    IconButton(onClick = { /*TODO*/ }) {
+                    IconButton(onClick = {
+                        viewModel.Nombre = ""
+                        viewModel.Apellido = ""
+                        viewModel.Edad = ""
+                        viewModel.Numero = ""
+                    }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Refresh"
+
                         )
+
                     }
                 }
             )
@@ -151,13 +166,23 @@ fun PantallaCliente(viewModel: ClienteViewModel = hiltViewModel()) {
                 )
                 val keyboardController =
                     LocalSoftwareKeyboardController.current
-                OutlinedButton(onClick = {
-                    keyboardController?.hide()
-                    if (viewModel.validar()) {
-                        viewModel.saveCliente()
-                        viewModel.setMessageShown()
-                    }
-                })
+                OutlinedButton(
+                    onClick = {
+                        keyboardController?.hide()
+                        if (isNombreValid && isApellidoValid && isEdadValid && isNumeroValid) {
+                            if (viewModel.validar()) {
+                                viewModel.saveCliente()
+                                viewModel.setMessageShown()
+                            }
+                        } else {
+                            if (isSaveButtonClicked) {
+                                isNombreEmpty = viewModel.Nombre.isEmpty()
+                            }
+                        }
+                    },
+                    enabled = isNumeroValid && isApellidoValid && isEdadValid && isNumeroValid,
+                    modifier = Modifier.padding(8.dp)
+                )
                 {
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
